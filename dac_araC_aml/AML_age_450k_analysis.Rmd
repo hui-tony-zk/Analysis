@@ -1,0 +1,184 @@
+Effect of AraC and DAC on AML epigenomes
+========================================================
+
+This document was last updated at `r date()` by Tony Hui
+
+### If libraries aren't installed, install them first
+
+```{r, eval=FALSE}
+source("http://bioconductor.org/biocLite.R")
+biocLite("GEOquery")
+biocLite("wateRmelon")
+biocLite("IlluminaHumanMethylation450k.db")
+install.packages("ggplot2")
+```
+
+### Load the libraries (so we can use their functions) before starting analysis
+
+```{r, message=FALSE, error=FALSE}
+library(GEOquery)
+library(wateRmelon)
+library(IlluminaHumanMethylation450k.db)
+library(ggplot2)
+library(reshape2)
+```
+
+### Load the data from Gene Expression Omnibus (GEO)
+
+```{r}
+if (file.exists("methyl_all_Rdata")) {
+    # if previously downloaded
+    load("methyl_all_Rdata")
+} else {
+    # if downloading for the first time
+    GSE40870 <- getGEO("GSE40870")
+
+    # Extract expression matrices (turn into data frames at once)
+    all_data <- as.data.frame(exprs(GSE40870[[1]]))
+
+    # Obtain the meta-data for the samples, but only look at the important ones
+    all_meta <- pData(phenoData(GSE40870[[1]]))
+    subset_meta <- subset(all_meta, select = c("geo_accession", "characteristics_ch1.3", "characteristics_ch1.4", "characteristics_ch1.6", "characteristics_ch1.7"))
+    
+    # Clean up the data to remove words that we aren't interested in
+    subset_meta_clean <- data.frame(
+      geo_accession = subset_meta$geo_accession,
+      gender = gsub(pattern = "gender: ", replacement = "", x = subset_meta$characteristics_ch1.3),
+      age = gsub(pattern = "age: ([0-9]+).*", replacement = "\\1", x = subset_meta$characteristics_ch1.4),
+      treatment = gsub(pattern = "treatment: ", replacement = "", x = subset_meta$characteristics_ch1.6),
+      sample = gsub(pattern = "aml sample identifier: ", replacement = "", x = subset_meta$characteristics_ch1.7)
+      )
+
+    # save the data to avoid future re-downloading
+    save(all_data, all_meta, subset_meta_clean, file = "methyl_all_Rdata")
+}
+```
+
+### Look at what data we have avaliable
+
+```{r}
+subset_meta_clean
+```
+
+### Grab the dataset we're interested in (in this case, when the sample ID is 410324 - we should get 6 samples (2 control, 2 AraC, 2 Dac))
+
+```{r}
+#grab the GEO of the datasets of interest
+dataset_interest_metadata <- subset(subset_meta_clean, sample == 410324)
+dataset_interest <- subset(all_data, select = dataset_interest_metadata$geo_accession)
+dataset_interest_metadata
+```
+
+### Normalize the data and average the control/AraC/Dac replicates
+
+```{r}
+# normalization
+dataset_interest_normalized <- betaqn(dataset_interest)
+
+# rename columns into appropiate samples
+colnames(dataset_interest_normalized) <- c("arac_1","arac_2","dac_1","dac_2","mock_1","mock_2")
+```
+
+Do a quick plot of the Beta Values to make sure everything is working okay
+
+```{r}
+dataset_interest_normalized_melt <- melt(dataset_interest_normalized)
+ggplot(dataset_interest_normalized_melt, aes(x=value, fill=variable))+
+  facet_wrap(~variable)+
+  geom_density(binwidth=0.05)
+```
+
+Average the two replicates for each condition, and compute a "variance" (essentially how "far apart" the two replicates are)
+
+```{r}
+# find the averages of each group and store in a new data frame
+data_summary <- data.frame(
+  probe_id = rownames(dataset_interest_normalized),
+  arac_mean= rowMeans(dataset_interest_normalized[,c("arac_1","arac_2")]),
+  arac_variance = abs(dataset_interest_normalized$arac_1-dataset_interest_normalized$arac_2)/2,
+  dac_mean = rowMeans(dataset_interest_normalized[,c("dac_1","dac_2")]),
+  dac_variance = abs(dataset_interest_normalized$dac_1-dataset_interest_normalized$dac_2)/2,
+  mock_mean = rowMeans(dataset_interest_normalized[,c("mock_1","mock_2")]),
+  mock_variance = abs(dataset_interest_normalized$mock_1-dataset_interest_normalized$mock_2)/2
+)
+```
+
+### Find the differentially methylated CpG's
+
+Example: DAC vs control
+
+```{r}
+#create a new data frame to store differences
+dacVScontrol <- data.frame(
+  probe_id=rownames(data_summary),
+  diff=data_summary$dac_mean-data_summary$mock_mean, #when we do DAC-control, negative values means that DAC is less methylated compared to control
+  variance=data_summary$dac_variance+data_summary$mock_variance #from phys101: when dealing with error, always add them
+  )
+dacVScontrol$cv <- abs(dacVScontrol$variance/dacVScontrol$diff) #coefficient of variation, essentially telling what percent of the difference between two samples may be due to random error
+```
+
+Let's quickly plot the degree of difference to see what we're dealing with
+
+```{r}
+ggplot(dacVScontrol, aes(x=diff))+
+  geom_bar(binwidth=0.01)+
+  scale_x_continuous(breaks=seq(from = -1, to = 1, by = 0.1))
+```
+
+Looks like not many CpG's are different. Let's remove everything that's less than 5% (0.05) different to see the rest of the data-points.
+
+```{r}
+dacVScontrol_subset <- subset(dacVScontrol, abs(diff)>0.05) #subset rows with absolute value > 0.05
+
+# make a quick plot
+ggplot(dacVScontrol_subset, aes(x=diff))+
+  geom_bar(binwidth=0.01)+
+  scale_x_continuous(breaks=seq(from = -1, to = 1, by = 0.05))
+```
+
+This looks much more informative. It looks like DAC, for the most part, decreaeses the methylation of CpGs. However, there does seem to be some that are increased in methylation. We can also kind-of conclucde that 30% difference is probably the maximum difference we're going to see.
+
+Let's now make an arbitrary cutoff - we're going to call any difference above 15% significant. Now, let's grab the cpg probes that are different by signifcant (differ by at least 15%). 
+
+We probably want differences that are actually significant, so we might want CpG's with a cv of less than some fracion. But to decide on this cutoff, we're going to need to see a plot first.
+
+```{r}
+#grab the cpg probes
+dacVScontrol_cutoff <- subset(dacVScontrol, abs(diff)>0.15)
+
+#make a quick plot
+ggplot(dacVScontrol_cutoff, aes(cv))+
+  geom_bar(binwidth=0.05)+
+  geom_vline(xintercept=0.15)+
+  scale_x_continuous(breaks=seq(from = 0, to = 2, by = 0.2))
+```
+
+We see a good number of CpG's where the variance can account for the difference in methylation values (cv=1), so obviously these are no good. From the graph, it looks like 15% coefficient of variance (cv) is a good cutoff (black line).
+
+```{r}
+dacVScontrol_cutoff_significant <- subset(dacVScontrol_cutoff, cv < 0.15)
+nrow(dacVScontrol_cutoff_significant)
+```
+
+Looks like we have 352 CpG's left. We can now do some annotation using the Illumina 450k database. For example, let's see what is avaliable.
+
+```{r}
+ls("package:IlluminaHumanMethylation450k.db")
+```
+
+Let's look at gene associations. We're going to use the Ensembl database, which is a collection of all 20,000 human genes and their genomic locations. Ensembl is jointly coordinated by the Sanger Institute and the European Bioinformatics Institute, located in Cambridge, UK (google Ensembl to learn more).
+
+```{r}
+# grab the table
+ensembl_genes <- as.data.frame(IlluminaHumanMethylation450kENSEMBL)
+
+# merge our probe list with the ensembl genes
+dacVScontrol_annotation <- merge(ensembl_genes, dacVScontrol_cutoff_significant, by="probe_id")
+
+#count the occurances of each ensembl id
+dacVScontrol_annotation_occuranges <- as.data.frame(table(dacVScontrol_annotation$ensembl_id))
+dacVScontrol_annotation_occuranges <- dacVScontrol_annotation_occuranges[order(dacVScontrol_annotation_occuranges$Freq, decreasing=T),]
+dacVScontrol_annotation_occuranges
+```
+
+Looks like the top three most affected genes are: `r head(as.character(dacVScontrol_annotation_occuranges$Var1), 3)`.

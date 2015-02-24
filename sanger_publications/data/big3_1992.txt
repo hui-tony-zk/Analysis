@@ -1,0 +1,16 @@
+CoulsonA	1
+CraxtonM	1
+DuZ	1
+DurbinR	1
+GreenP	2
+HalloranN	1
+HillierL	2
+HuynhC	1
+MartinC	1
+ShownkeenR	1
+StadenR	1
+SulstonJ	1
+Thierry-MiegJ	1
+ThomasK	1
+WaterstonR	1
+WilsonR	1

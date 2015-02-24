@@ -1,0 +1,258 @@
+---
+title: "Publications from the Sanger Institute"
+author: "Tony Hui"
+date: "9 January, 2015"
+output: word_document
+---
+
+### Why am I doing this?
+
+For the upcomming interview at the PhD open day at the Sanger Institute, I'm supposed to interview 1 on 1 with three faculty members. I get to rank my top 6 choices. 
+
+My primary goal during my PhD is to get as many publications as possible, and idealy within the "Big 3" journals (Nature, Science, or Cell). I also hope to be with a lab that does cancer research, lots of bioinformatics, and colaborates a lot. Hopefully, by analysing the publication records of the various labs at the Sanger, maybe I will be able to make some more informed decisions.
+
+### Now for the Analysis
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(reshape2)
+```
+
+First, take a look at the raw data of publications of all faculty members (extracted from the Sanger website's "publication" section):
+
+```{r big3, echo=F, }
+setwd(dir = "data/")
+file_names <- dir(path = ".", pattern = "big3_201[0-9].txt")
+files <- lapply(X = file_names, FUN = read.table)
+file_names <- gsub(pattern = "big3_", replacement = "", x = file_names)
+file_names <- gsub(pattern = ".txt", replacement = "", x = file_names)
+
+# create progress bar
+#pb <- txtProgressBar(min = 0, max = length(files), style = 3)
+#merge over loop
+merge.master <- files[[1]]
+colnames(merge.master) <- c("name",  file_names[1])
+for (i in 2:length(files)) {
+  tmp <- files[[i]]
+  colnames(tmp) <- c("name",  file_names[i])
+  merge.master <- merge(x = merge.master, y = tmp, by = c("name"), all = T)
+#  setTxtProgressBar(pb, i)
+}
+
+merge.master[is.na(merge.master)] <- 0
+
+faculty_names <- read.table(file = "faculty.txt")
+merge.master_faculty <- merge.master[grep(paste(faculty_names$V1, collapse='|'), merge.master$name, ignore.case=TRUE),]
+```
+```{r, echo=FALSE}
+head(merge.master_faculty)
+```
+
+Now, let's melt the data.frame to prepare for ggplot plotting:
+
+```{r, echo=FALSE}
+merge.melt <- melt(merge.master_faculty, id.vars = "name", value.name = "count", variable.name = "year")
+merge.melt <- merge.melt[(order(merge.melt$name)),]
+merge.melt$year <- as.integer(as.character(merge.melt$year))
+merge.melt <- subset(merge.melt, name != "CampbellH")
+
+merge.cumsum <- within(merge.melt, {
+  cumsum <- ave(x = count, name, FUN = cumsum)
+  total <- ave(x = count, name, FUN = sum)
+})
+
+merge.cumsum_rank <- transform(unique(subset(merge.cumsum, select = c("name",  "total"))), rank =rank(-total, ties.method = "first"))
+merge.cumsum_rank <- merge(x = merge.cumsum_rank, y = merge.cumsum, by=c("name",  "total"))
+
+merge_cumsum_subset <- subset(merge.cumsum_rank, rank <= 10)
+merge_cumsum_subset$name <- droplevels(merge_cumsum_subset$name)
+merge_cumsum_subset$name <- with(merge_cumsum_subset, factor(name, levels=sort(levels(name))))
+```
+```{r, echo=FALSE}
+head(merge_cumsum_subset)
+```
+
+First, have a look at cumulative number of publications since 2010 for the top 10 publishing faculty members. For now, let's only count publications that were in published in Nature, Science or Cell.
+
+```{r, echo=FALSE, fig.width=12, dpi=72}
+ggplot(data = merge_cumsum_subset, aes(x=year, y=cumsum, group=name))+
+  geom_line(aes(color=name), size=2)+
+  #geom_bar(aes(fill=name) stat="identity", position="dodge")+
+  xlab("Publishing year")+
+  ylab("Cumulative number of publications in the \"Big 3\" journals")+
+  scale_x_continuous(breaks=c(2010:2014))+
+  scale_color_manual(values=colorRampPalette(colors = c("red","blue","darkgoldenrod1","purple","green","black"))(10))+
+  theme_bw()
+```
+
+Looks like Dr. Stratton (Cancer Genome Project) is leading the way with most "big 3" publications since 2010. Following him is Dr. Campbell (Cancer Genome Project) at #2, Dr. Barroso (Metabolic disease group) at #3, and Dr. Soranzo (Genomics of quantitative variation) at #4.
+
+If we look at the number of publications per year, we can see if any labs have any publishing "momentum." 
+
+```{r, echo=FALSE, fig.width=12, dpi=72}
+ggplot(data = merge_cumsum_subset, aes(x=year, y=count, group=name))+
+  geom_line(aes(color=name), size=2)+
+  #geom_bar(aes(fill=name) stat="identity", position="dodge")+
+  xlab("Publishing year")+
+  ylab("Yearly number of publications in the \"Big 3\" journals")+
+  scale_x_continuous(breaks=c(2010:2014))+
+  scale_color_manual(values=colorRampPalette(colors = c("red","blue","darkgoldenrod1","purple","green","black"))(10))+
+  theme_bw()
+```
+
+Interestingly, it looks like 2010 was a great year for the Sanger Institute, but it was followed by a "slump" year in 2011. It also looks like Dr. Stratton and Dr. Campbell (both Cancer Genome Project) have been publishing a lot recently.
+
+```{r total, echo=F}
+setwd(dir = "data/")
+file_names_all <- dir(path = ".", pattern = "all_publications_201[0-9].txt")
+files_all <- lapply(X = file_names_all, FUN = read.table)
+file_names_all <- gsub(pattern = "all_publications_", replacement = "", x = file_names_all)
+file_names_all <- gsub(pattern = ".txt", replacement = "", x = file_names_all)
+
+# create progress bar
+#pb <- txtProgressBar(min = 0, max = length(files_all), style = 3)
+#merge over loop
+merge_master_all <- files_all[[1]]
+colnames(merge_master_all) <- c("name",  file_names_all[1])
+for (i in 2:length(files_all)) {
+  tmp <- files_all[[i]]
+  colnames(tmp) <- c("name",  file_names_all[i])
+  merge_master_all <- merge(x = merge_master_all, y = tmp, by = c("name"), all = T)
+#  setTxtProgressBar(pb, i)
+}
+
+merge_master_all[is.na(merge_master_all)] <- 0
+
+faculty_names <- read.table(file = "faculty.txt")
+merge_master_all_faculty <- merge_master_all[grep(paste(faculty_names$V1, collapse='|'), merge_master_all$name, ignore.case=TRUE),]
+
+merge_melt_all <- melt(merge_master_all_faculty, id.vars = "name", value.name = "count", variable.name = "year")
+merge_melt_all <- merge_melt_all[(order(merge_melt_all$name)),]
+merge_melt_all$year <- as.integer(as.character(merge_melt_all$year))
+merge_melt_all <- subset(merge_melt_all, name != "CampbellH")
+
+merge_cumsum_all <- within(merge_melt_all, {
+  cumsum <- ave(x = count, name, FUN = cumsum)
+  total <- ave(x = count, name, FUN = sum)
+})
+
+merge_cumsum_all_rank <- transform(unique(subset(merge_cumsum_all, select = c("name",  "total"))), rank =rank(-total, ties.method = "first"))
+merge_cumsum_all_rank <- merge(x = merge_cumsum_all_rank, y = merge_cumsum_all, by=c("name",  "total"))
+
+merge_cumsum_subset_all <- subset(merge_cumsum_all_rank, rank <= 10)
+merge_cumsum_subset_all$name <- droplevels(merge_cumsum_subset_all$name)
+merge_cumsum_subset_all$name <- with(merge_cumsum_subset_all, factor(name, levels=sort(levels(name))))
+```
+
+Now, let's take a look at the cumulative sum of publications, but now counting all journal articles rather than only counting articles published within the "big 3."
+
+```{r, echo=FALSE, fig.width=12, dpi=72}
+ggplot(data = merge_cumsum_subset_all, aes(x=year, y=cumsum, group=name))+
+  geom_line(aes(color=name), size=2)+
+  #geom_bar(aes(fill=name) stat="identity", position="dodge")+
+  xlab("Publishing year")+
+  ylab("Cumulative number of publications in all journals")+
+  scale_x_continuous(breaks=c(2010:2014))+
+  scale_color_manual(values=colorRampPalette(colors = c("red","blue","darkgoldenrod1","purple","green","black"))(10))+
+  theme_bw()
+```
+
+The clear leader here is Dr. Parkhill (Pathogen Genomics) at #1. Dr. Dougan (Microbial pathogenesis) and Dr. Adams (Experimental cancer genetics) are trailing behind at #2 and #3.
+
+Once again, let's look at the number of publications per year. 
+
+```{r, echo=FALSE, fig.width=12, dpi=72}
+ggplot(data = merge_cumsum_subset_all, aes(x=year, y=count, group=name))+
+  geom_line(aes(color=name), size=2)+
+  #geom_bar(aes(fill=name) stat="identity", position="dodge")+
+  xlab("Publishing year")+
+  ylab("Yearly number of publications in all journals")+
+  scale_x_continuous(breaks=c(2010:2014))+
+  scale_color_manual(values=colorRampPalette(colors = c("red","blue","darkgoldenrod1","purple","green","black"))(10))+
+  theme_bw()
+```
+
+Looks like Dr. Parkhill (Pathogen genomics) has been publishing a lot recently! Dr. Dougan (Microbial Pathogenesis), Dr. Berriman (Parasite Genomics), and Dr. Campbell (Cancer Genome Project) have also been increasing in output recently. Actually, it appears that everybody in the top 10 are increasing publications in the last 2 years. Probably a very good time to join the Sanger Institute.
+
+Let's look at the ratio of big3 publications versus total publications might tell me which lab primarily publishes big. Let's plot the total number of publications and the number of "big3" publications together, and sort by the ratio. To remove noise, let's remove anybody with less than 10 total publications since 2010.
+
+```{r, echo=FALSE, fig.width=12, dpi=72}
+all_together_ratio <- unique(merge(
+  data.frame(name=merge_cumsum_all_rank$name, total_publications=merge_cumsum_all_rank$total),
+  data.frame(name=merge.cumsum_rank$name, big3_publications=merge.cumsum_rank$total),
+  by=c("name")
+  ))
+all_together_ratio$ratio <- round(as.numeric(all_together_ratio[,3]/all_together_ratio[,2]),2)
+all_together_ratio_subset <- subset(all_together_ratio, all_together_ratio$total_publications > 10 & name != "JacksonAU" & name != "LiuJ" & name != "LiuW")
+all_together_ratio_subset <- transform(all_together_ratio_subset, rank =rank(-ratio, ties.method = "first"))
+all_together_ratio_subset <- all_together_ratio_subset[order(all_together_ratio_subset$rank),]
+all_together_ratio_subset$name <- droplevels(all_together_ratio_subset$name)
+all_together_ratio_subset$name <- with(all_together_ratio_subset, factor(name, levels=unique(name)))
+all_together_ratio_subset$non_big3 <- all_together_ratio_subset$total_publications - all_together_ratio_subset$big3_publications
+all_together_ratio_subset <- subset(all_together_ratio_subset, rank <= 12)
+
+all_ratio <- melt(subset(all_together_ratio_subset, select=c(1,2,3,4)), id.vars = c("name", "ratio"), value.name = "count", variable.name = "Journal")
+all_ratio$Journal <- factor(all_ratio$Journal, levels=levels(all_ratio$Journal)[c(1,2)])
+
+ggplot(data = all_ratio, aes(x=name, y=count, fill=Journal))+
+  geom_bar(stat="identity", position="dodge")+
+  geom_text(aes(x = name, y= -10, label=ratio, family="sans"))+
+  #geom_bar(aes(fill=name) stat="identity", position="dodge")+
+  xlab("Publishing year")+
+  ylab("Number of publications since 2010\n(ratio of big3 to total in text below each bar)")+
+  scale_fill_discrete(name="", labels=c("Total Publications", "Publications in \n\"Big 3\" Journals"))+
+  theme_bw()
+```
+
+Looks like Dr. Wright (Cell surface signalling laboratory) leads the pack with Dr. Anderson (Genomics of inflammation and immunity) following close behind. However, it appears that the ratios are almost a uniform distribution, so this metric is probably not too impactful unless the rankings are far apart (3-4 places). Let's look at their "publication curves":
+
+```{r, echo=FALSE, fig.width=12, dpi=72}
+ratios_outliers <- merge(
+  data.frame(name=merge_cumsum_all_rank$name, year=merge_cumsum_all_rank$year, total_publications=merge_cumsum_all_rank$cumsum),
+  data.frame(name=merge.cumsum_rank$name, year=merge.cumsum_rank$year, big3_publications=merge.cumsum_rank$cumsum),
+  by=c("name","year")
+  )
+
+ratios_outliers <- melt(subset(ratios_outliers, name %in% levels(droplevels(all_ratio$name))), id.vars = c("name", "year"), value.name = "count")
+
+ratios_outliers$name <- with(ratios_outliers, factor(name, levels=levels(all_ratio$name)))
+
+ggplot(data = ratios_outliers, aes(x=year, y=count))+
+  geom_line(aes(color=variable), size=1.5)+
+  facet_wrap(facets = ~ name, ncol=4, scales = "free_x")+
+  #geom_bar(aes(fill=name) stat="identity", position="dodge")+
+  xlab("Publishing year")+
+  ylab("Yearly number of publications in all journals")+
+  scale_color_discrete(name="",labels=c("Total Publications", "Publications in \n\"Big 3\" Journals"))+
+  scale_x_continuous(breaks=c(2010:2014))+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+It appears that researchers tend to publish more "big3" journals first at the beginning of their career, then "branch off" to other journals - perhaps that's how they started their careers to get tenure?
+
+It also makes Dr. Stratton, Dr. Campbell and Dr. Barrosol much more impressive - the previous bar plot shows that these three labs are still within the top 10 in terms of proportion of papers landing in the "big3" journals, while this line graph shows an increasing gap of "big3" papers versus total papers as time progresses. Impressive that these three researchers can maintain the gap!
+
+Anyways, time to pick 6 faculty members to interview with.
+
+### Rankings
+
+1. Dr. Peter Campbell
+    + Does technology development (my specialty), so may be keen on doing single-cell work as well. Consistantly publishes well (rank 2 in big3, rank 1 in big3 rate), and is increasing in output in recent years. 
+2. Dr. Michael Stratton
+    + Lots of papers and also publishing at an increasing rate (rank 1 in big3, rank 2 in big3 rate). Head of the institute, and found BRCA2 mutations.
+3. Dr. Carl Anderson
+    + He is early in his career, and seems to publish a high proportion of "big 3" journals (rank 2 in ratio), and does a lot of statistics. Immunology and genetics are an interesting combination as well.
+4. Dr. Jeffrey Barrett
+    + Very rich profile - involved in a million collaborations. He was also was at MIT doing computer science, which is very impressive. Lots of statistical modelling here.
+5. Dr. Nicole Soranzo
+    + Does open chromatin stuff - perhaps ATAC-seq is next? Publishes well, although on the decline
+6. Dr. Wolf Reik if possible, if not then Dr. Ultan McDermott
+    + Cancer genomics, and although he didn't make any of the lists, his reserach is interesting and involves cancer
+    
+```{r knitr, echo=FALSE, eval=FALSE}
+library(knitr)
+knit(input = "publications.Rmd", output="README.md")
+```
+    
+

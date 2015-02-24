@@ -1,7 +1,7 @@
 Effect of AraC and DAC on AML epigenomes
 ========================================================
 
-This document was last updated at Mon Feb 23 17:09:31 2015 by Tony Hui
+This document was last updated at Mon Feb 23 17:17:27 2015 by Tony Hui
 
 ### If libraries aren't installed, install them first
 
@@ -21,17 +21,6 @@ install.packages("ggplot2")
 library(GEOquery)
 library(wateRmelon)
 library(IlluminaHumanMethylation450k.db)
-```
-
-```
-## Warning: 'IlluminaHumanMethylation450k.db' is deprecated.
-## Use 'FDb.InfiniumMethylation.hg19' instead.
-## Use 'FDb.InfiniumMethylation.hg18' instead.
-## Use 'mapToGenome() function in minfi or methylumi' instead.
-## See help("Deprecated")
-```
-
-```r
 library(ggplot2)
 library(reshape2)
 ```
@@ -492,3 +481,5 @@ dacVScontrol_annotation_occuranges
 ```
 
 Looks like the top three most affected genes are: ENSG00000104714, ENSG00000157985, ENSG00000186487.
+
+

@@ -15,7 +15,7 @@ install.packages("ggplot2")
 
 ### Load the libraries (so we can use their functions) before starting analysis
 
-```{r, message=FALSE, error=FALSE}
+```{r, message=FALSE, error=FALSE, warning=FALSE}
 library(GEOquery)
 library(wateRmelon)
 library(IlluminaHumanMethylation450k.db)
@@ -182,3 +182,8 @@ dacVScontrol_annotation_occuranges
 ```
 
 Looks like the top three most affected genes are: `r head(as.character(dacVScontrol_annotation_occuranges$Var1), 3)`.
+
+```{r knitr, echo=FALSE, eval=FALSE}
+library(knitr)
+knit(input = "AML_age_450k_analysis.Rmd", output="README.md")
+```

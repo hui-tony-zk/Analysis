@@ -1,7 +1,7 @@
 Effect of AraC and DAC on AML epigenomes
 ========================================================
 
-This document was last updated at Mon Feb 23 17:17:27 2015 by Tony Hui
+This document was last updated at Tue Feb 24 14:53:37 2015 by Tony Hui
 
 ### If libraries aren't installed, install them first
 
@@ -61,6 +61,7 @@ if (file.exists("methyl_all_Rdata")) {
 
 
 ```r
+#List of the metadata
 subset_meta_clean
 ```
 
@@ -116,6 +117,84 @@ subset_meta_clean
 ## V49    GSM1003882 female  76              mock 989176
 ```
 
+```r
+#Sneak peak of the actual data
+head(all_data) #the head function allows you to look only at the first 6 rows, to give you an idea of what's happening - saves computing resources
+```
+
+```
+##            GSM1003835 GSM1003836 GSM1003837 GSM1003838 GSM1003839
+## cg00000029 0.09770362 0.08138439  0.1205529  0.1522029  0.1379017
+## cg00000108 0.92334093 0.92794232  0.9103985  0.9341260  0.9334861
+## cg00000109 0.88167387 0.88104226  0.8693466  0.8487024  0.8863865
+## cg00000165 0.24567054 0.32602945  0.2770543  0.2762217  0.2867580
+## cg00000236 0.64981141 0.72679873  0.6265281  0.6290299  0.6527885
+## cg00000289 0.60572586 0.64946936  0.5899017  0.5910464  0.6512940
+##            GSM1003840 GSM1003841 GSM1003842 GSM1003843 GSM1003844
+## cg00000029  0.1113193  0.5438691  0.5442738  0.4893308  0.5345305
+## cg00000108  0.9276981  0.9457604  0.9351095  0.9206896  0.9229902
+## cg00000109  0.9199523  0.9036431  0.8789942  0.8649255  0.8646798
+## cg00000165  0.3057312  0.1727575  0.1723752  0.1819357  0.1684314
+## cg00000236  0.7345921  0.8687549  0.8687459  0.8448829  0.8105711
+## cg00000289  0.6400911  0.7534166  0.6971614  0.6985608  0.6391624
+##            GSM1003845 GSM1003846 GSM1003847 GSM1003848 GSM1003849
+## cg00000029  0.4578337  0.5357979  0.3655092  0.4097847  0.3549954
+## cg00000108  0.9471890  0.9507958  0.9265152  0.9401920  0.9116125
+## cg00000109  0.9126546  0.9092872  0.9161088  0.9001012  0.8640296
+## cg00000165  0.1432203  0.1451639  0.2087321  0.2455311  0.1869702
+## cg00000236  0.8632048  0.8783532  0.7973236  0.8193012  0.7863102
+## cg00000289  0.7093994  0.7259917  0.7324086  0.7785059  0.6306634
+##            GSM1003850 GSM1003851 GSM1003852 GSM1003853 GSM1003854
+## cg00000029  0.3940475  0.3303158  0.4097438  0.5665803  0.6762133
+## cg00000108  0.9039871  0.9366198  0.9335556  0.9260097  0.9243585
+## cg00000109  0.8550239  0.8950968  0.9103764  0.9157250  0.8918366
+## cg00000165  0.2365971  0.2010690  0.2284960  0.5797420  0.5984302
+## cg00000236  0.7714201  0.8205036  0.8299365  0.7236037  0.7279613
+## cg00000289  0.6687886  0.6946350  0.7239822  0.7321501  0.7266089
+##            GSM1003855 GSM1003856 GSM1003857 GSM1003858 GSM1003859
+## cg00000029  0.5094310  0.5540379  0.5597647  0.5679505  0.6876582
+## cg00000108  0.8769244  0.8859094  0.9427976  0.9675966  0.9512618
+## cg00000109  0.8844061  0.8375194  0.8989786  0.9141005  0.9230442
+## cg00000165  0.5339080  0.6002981  0.5501785  0.6282725  0.2137327
+## cg00000236  0.6522467  0.6665461  0.7250342  0.7703430  0.9038859
+## cg00000289  0.6519782  0.6261162  0.7531270  0.7705719  0.7359851
+##            GSM1003860 GSM1003861 GSM1003862 GSM1003863 GSM1003864
+## cg00000029  0.7054418  0.4970208  0.4915650  0.6858658  0.6420273
+## cg00000108  0.9492522  0.7621606  0.8653043  0.9500611  0.9528432
+## cg00000109  0.9259927  0.7093359  0.7436197  0.9157322  0.9363831
+## cg00000165  0.2187896  0.2321971  0.2395928  0.2107447  0.1971541
+## cg00000236  0.8920759  0.7184575  0.7399974  0.9090078  0.8995231
+## cg00000289  0.7177719  0.6388473  0.6028262  0.7334017  0.7465076
+##            GSM1003865 GSM1003866 GSM1003867 GSM1003868 GSM1003869
+## cg00000029  0.9100832  0.8694798  0.7772407  0.8380676  0.8830101
+## cg00000108  0.9425785  0.9305893  0.9303567  0.9051529  0.9376853
+## cg00000109  0.9070825  0.9277536  0.8640025  0.8611570  0.9281281
+## cg00000165  0.2076115  0.1847291  0.2266397  0.1878423  0.1984504
+## cg00000236  0.8439385  0.8646058  0.8142227  0.8090898  0.8466210
+## cg00000289  0.7387161  0.7402843  0.7318098  0.6942558  0.7881759
+##            GSM1003870 GSM1003871 GSM1003872 GSM1003873 GSM1003874
+## cg00000029  0.9050922  0.6751064  0.6461420  0.5583681  0.5916006
+## cg00000108  0.9720369  0.9452376  0.9352419  0.8906831  0.8961511
+## cg00000109  0.9426385  0.9382293  0.9198907  0.8258370  0.7959850
+## cg00000165  0.1767423  0.5367246  0.5007469  0.4884229  0.4929143
+## cg00000236  0.8490504  0.8852432  0.8642556  0.8206809  0.8345827
+## cg00000289  0.7396987  0.7939193  0.8106650  0.6910598  0.7201343
+##            GSM1003875 GSM1003876 GSM1003877 GSM1003878 GSM1003879
+## cg00000029  0.6838534  0.6901250  0.6630602  0.6442612  0.5739895
+## cg00000108  0.9405450  0.9387307  0.9164805  0.9374955  0.8918096
+## cg00000109  0.8946916  0.9253815  0.9141626  0.9427712  0.8638737
+## cg00000165  0.5065914  0.4954049  0.1894454  0.1801841  0.1947675
+## cg00000236  0.8916527  0.8818564  0.8693238  0.8816780  0.8662885
+## cg00000289  0.7691863  0.7751595  0.7413030  0.8562813  0.7571723
+##            GSM1003880 GSM1003881 GSM1003882
+## cg00000029  0.6110825  0.5892823  0.6083358
+## cg00000108  0.9236228  0.9304715  0.9613598
+## cg00000109  0.9040147  0.8925043  0.9393362
+## cg00000165  0.2203279  0.1894841  0.2187752
+## cg00000236  0.8743838  0.8769099  0.9187089
+## cg00000289  0.7462470  0.7245192  0.8418942
+```
+
 ### Grab the dataset we're interested in (in this case, when the sample ID is 410324 - we should get 6 samples (2 control, 2 AraC, 2 Dac))
 
 
@@ -136,22 +215,19 @@ dataset_interest_metadata
 ## V7    GSM1003840   male  60              mock 410324
 ```
 
-### Normalize the data and average the control/AraC/Dac replicates
+### Rename the columns to their appropriate sample names (NO MORE NORMALIZATION)
 
 
 ```r
-# normalization
-dataset_interest_normalized <- betaqn(dataset_interest)
-
 # rename columns into appropiate samples
-colnames(dataset_interest_normalized) <- c("arac_1","arac_2","dac_1","dac_2","mock_1","mock_2")
+colnames(dataset_interest) <- c("arac_1","arac_2","dac_1","dac_2","mock_1","mock_2")
 ```
 
 Do a quick plot of the Beta Values to make sure everything is working okay
 
 
 ```r
-dataset_interest_normalized_melt <- melt(dataset_interest_normalized)
+dataset_interest_melt <- melt(dataset_interest)
 ```
 
 ```
@@ -159,7 +235,7 @@ dataset_interest_normalized_melt <- melt(dataset_interest_normalized)
 ```
 
 ```r
-ggplot(dataset_interest_normalized_melt, aes(x=value, fill=variable))+
+ggplot(dataset_interest_melt, aes(x=value, fill=variable))+
   facet_wrap(~variable)+
   geom_density(binwidth=0.05)
 ```
@@ -172,13 +248,13 @@ Average the two replicates for each condition, and compute a "variance" (essenti
 ```r
 # find the averages of each group and store in a new data frame
 data_summary <- data.frame(
-  probe_id = rownames(dataset_interest_normalized),
-  arac_mean= rowMeans(dataset_interest_normalized[,c("arac_1","arac_2")]),
-  arac_variance = abs(dataset_interest_normalized$arac_1-dataset_interest_normalized$arac_2)/2,
-  dac_mean = rowMeans(dataset_interest_normalized[,c("dac_1","dac_2")]),
-  dac_variance = abs(dataset_interest_normalized$dac_1-dataset_interest_normalized$dac_2)/2,
-  mock_mean = rowMeans(dataset_interest_normalized[,c("mock_1","mock_2")]),
-  mock_variance = abs(dataset_interest_normalized$mock_1-dataset_interest_normalized$mock_2)/2
+  probe_id = rownames(dataset_interest),
+  arac_mean= rowMeans(dataset_interest[,c("arac_1","arac_2")]),
+  arac_variance = abs(dataset_interest$arac_1-dataset_interest$arac_2)/2,
+  dac_mean = rowMeans(dataset_interest[,c("dac_1","dac_2")]),
+  dac_variance = abs(dataset_interest$dac_1-dataset_interest$dac_2)/2,
+  mock_mean = rowMeans(dataset_interest[,c("mock_1","mock_2")]),
+  mock_variance = abs(dataset_interest$mock_1-dataset_interest$mock_2)/2
 )
 ```
 
@@ -251,7 +327,7 @@ nrow(dacVScontrol_cutoff_significant)
 ```
 
 ```
-## [1] 352
+## [1] 2082
 ```
 
 Looks like we have 352 CpG's left. We can now do some annotation using the Illumina 450k database. For example, let's see what is avaliable.
@@ -343,143 +419,21 @@ dacVScontrol_annotation <- merge(ensembl_genes, dacVScontrol_cutoff_significant,
 #count the occurances of each ensembl id
 dacVScontrol_annotation_occuranges <- as.data.frame(table(dacVScontrol_annotation$ensembl_id))
 dacVScontrol_annotation_occuranges <- dacVScontrol_annotation_occuranges[order(dacVScontrol_annotation_occuranges$Freq, decreasing=T),]
-dacVScontrol_annotation_occuranges
+
+#see the top 6 genes
+head(dacVScontrol_annotation_occuranges)
 ```
 
 ```
 ##                Var1 Freq
-## 25  ENSG00000104714    7
-## 64  ENSG00000157985    7
-## 98  ENSG00000186487    6
-## 6   ENSG00000068024    4
-## 43  ENSG00000130508    4
-## 1   ENSG00000032389    3
-## 13  ENSG00000080854    3
-## 71  ENSG00000167632    3
-## 99  ENSG00000187537    3
-## 125 ENSG00000266795    3
-## 128 ENSG00000270375    3
-## 130 ENSG00000276399    3
-## 5   ENSG00000066032    2
-## 14  ENSG00000083857    2
-## 16  ENSG00000090920    2
-## 24  ENSG00000104044    2
-## 29  ENSG00000112685    2
-## 33  ENSG00000115705    2
-## 50  ENSG00000145113    2
-## 55  ENSG00000150403    2
-## 58  ENSG00000151962    2
-## 62  ENSG00000155093    2
-## 73  ENSG00000170819    2
-## 74  ENSG00000171045    2
-## 87  ENSG00000182095    2
-## 88  ENSG00000182667    2
-## 90  ENSG00000183169    2
-## 108 ENSG00000218336    2
-## 129 ENSG00000275395    2
-## 2   ENSG00000046774    1
-## 3   ENSG00000049618    1
-## 4   ENSG00000060709    1
-## 7   ENSG00000069998    1
-## 8   ENSG00000072832    1
-## 9   ENSG00000074181    1
-## 10  ENSG00000075886    1
-## 11  ENSG00000077522    1
-## 12  ENSG00000078177    1
-## 15  ENSG00000087258    1
-## 17  ENSG00000100031    1
-## 18  ENSG00000100852    1
-## 19  ENSG00000102572    1
-## 20  ENSG00000102683    1
-## 21  ENSG00000103111    1
-## 22  ENSG00000103227    1
-## 23  ENSG00000103494    1
-## 26  ENSG00000109906    1
-## 27  ENSG00000112562    1
-## 28  ENSG00000112584    1
-## 30  ENSG00000112893    1
-## 31  ENSG00000114251    1
-## 32  ENSG00000114861    1
-## 34  ENSG00000118407    1
-## 35  ENSG00000118596    1
-## 36  ENSG00000123066    1
-## 37  ENSG00000124302    1
-## 38  ENSG00000124490    1
-## 39  ENSG00000125207    1
-## 40  ENSG00000126217    1
-## 41  ENSG00000128578    1
-## 42  ENSG00000130226    1
-## 44  ENSG00000130821    1
-## 45  ENSG00000131018    1
-## 46  ENSG00000137266    1
-## 47  ENSG00000141448    1
-## 48  ENSG00000142611    1
-## 49  ENSG00000143450    1
-## 51  ENSG00000146555    1
-## 52  ENSG00000146648    1
-## 53  ENSG00000147454    1
-## 54  ENSG00000149435    1
-## 56  ENSG00000150893    1
-## 57  ENSG00000151952    1
-## 59  ENSG00000152076    1
-## 60  ENSG00000153303    1
-## 61  ENSG00000153495    1
-## 63  ENSG00000155792    1
-## 65  ENSG00000163032    1
-## 66  ENSG00000163510    1
-## 67  ENSG00000164113    1
-## 68  ENSG00000164330    1
-## 69  ENSG00000164484    1
-## 70  ENSG00000166351    1
-## 72  ENSG00000168412    1
-## 75  ENSG00000171773    1
-## 76  ENSG00000171847    1
-## 77  ENSG00000171853    1
-## 78  ENSG00000172428    1
-## 79  ENSG00000172554    1
-## 80  ENSG00000173876    1
-## 81  ENSG00000175470    1
-## 82  ENSG00000175806    1
-## 83  ENSG00000179023    1
-## 84  ENSG00000180475    1
-## 85  ENSG00000181090    1
-## 86  ENSG00000181867    1
-## 89  ENSG00000183117    1
-## 91  ENSG00000183206    1
-## 92  ENSG00000183580    1
-## 93  ENSG00000183666    1
-## 94  ENSG00000183715    1
-## 95  ENSG00000183826    1
-## 96  ENSG00000184258    1
-## 97  ENSG00000185736    1
-## 100 ENSG00000188185    1
-## 101 ENSG00000188760    1
-## 102 ENSG00000196581    1
-## 103 ENSG00000198033    1
-## 104 ENSG00000204175    1
-## 105 ENSG00000204689    1
-## 106 ENSG00000206474    1
-## 107 ENSG00000215374    1
-## 109 ENSG00000220550    1
-## 110 ENSG00000221900    1
-## 111 ENSG00000224234    1
-## 112 ENSG00000225725    1
-## 113 ENSG00000227888    1
-## 114 ENSG00000229412    1
-## 115 ENSG00000230505    1
-## 116 ENSG00000232397    1
-## 117 ENSG00000233803    1
-## 118 ENSG00000234749    1
-## 119 ENSG00000235441    1
-## 120 ENSG00000235597    1
-## 121 ENSG00000237375    1
-## 122 ENSG00000260807    1
-## 123 ENSG00000261456    1
-## 124 ENSG00000262722    1
-## 126 ENSG00000268982    1
-## 127 ENSG00000269277    1
+## 392 ENSG00000157985   25
+## 381 ENSG00000155093   15
+## 107 ENSG00000104714   13
+## 142 ENSG00000112562   12
+## 212 ENSG00000130508   12
+## 591 ENSG00000186487   12
 ```
 
-Looks like the top three most affected genes are: ENSG00000104714, ENSG00000157985, ENSG00000186487.
+Looks like the top three most affected genes are: ENSG00000157985, ENSG00000155093, ENSG00000104714.
 
 

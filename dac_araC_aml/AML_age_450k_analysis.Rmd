@@ -57,7 +57,11 @@ if (file.exists("methyl_all_Rdata")) {
 ### Look at what data we have avaliable
 
 ```{r}
+#List of the metadata
 subset_meta_clean
+
+#Sneak peak of the actual data
+head(all_data) #the head function allows you to look only at the first 6 rows, to give you an idea of what's happening - saves computing resources
 ```
 
 ### Grab the dataset we're interested in (in this case, when the sample ID is 410324 - we should get 6 samples (2 control, 2 AraC, 2 Dac))
@@ -69,21 +73,18 @@ dataset_interest <- subset(all_data, select = dataset_interest_metadata$geo_acce
 dataset_interest_metadata
 ```
 
-### Normalize the data and average the control/AraC/Dac replicates
+### Rename the columns to their appropriate sample names (NO MORE NORMALIZATION)
 
 ```{r}
-# normalization
-dataset_interest_normalized <- betaqn(dataset_interest)
-
 # rename columns into appropiate samples
-colnames(dataset_interest_normalized) <- c("arac_1","arac_2","dac_1","dac_2","mock_1","mock_2")
+colnames(dataset_interest) <- c("arac_1","arac_2","dac_1","dac_2","mock_1","mock_2")
 ```
 
 Do a quick plot of the Beta Values to make sure everything is working okay
 
-```{r}
-dataset_interest_normalized_melt <- melt(dataset_interest_normalized)
-ggplot(dataset_interest_normalized_melt, aes(x=value, fill=variable))+
+```{r warning=FALSE}
+dataset_interest_melt <- melt(dataset_interest)
+ggplot(dataset_interest_melt, aes(x=value, fill=variable))+
   facet_wrap(~variable)+
   geom_density(binwidth=0.05)
 ```
@@ -93,13 +94,13 @@ Average the two replicates for each condition, and compute a "variance" (essenti
 ```{r}
 # find the averages of each group and store in a new data frame
 data_summary <- data.frame(
-  probe_id = rownames(dataset_interest_normalized),
-  arac_mean= rowMeans(dataset_interest_normalized[,c("arac_1","arac_2")]),
-  arac_variance = abs(dataset_interest_normalized$arac_1-dataset_interest_normalized$arac_2)/2,
-  dac_mean = rowMeans(dataset_interest_normalized[,c("dac_1","dac_2")]),
-  dac_variance = abs(dataset_interest_normalized$dac_1-dataset_interest_normalized$dac_2)/2,
-  mock_mean = rowMeans(dataset_interest_normalized[,c("mock_1","mock_2")]),
-  mock_variance = abs(dataset_interest_normalized$mock_1-dataset_interest_normalized$mock_2)/2
+  probe_id = rownames(dataset_interest),
+  arac_mean= rowMeans(dataset_interest[,c("arac_1","arac_2")]),
+  arac_variance = abs(dataset_interest$arac_1-dataset_interest$arac_2)/2,
+  dac_mean = rowMeans(dataset_interest[,c("dac_1","dac_2")]),
+  dac_variance = abs(dataset_interest$dac_1-dataset_interest$dac_2)/2,
+  mock_mean = rowMeans(dataset_interest[,c("mock_1","mock_2")]),
+  mock_variance = abs(dataset_interest$mock_1-dataset_interest$mock_2)/2
 )
 ```
 
@@ -178,7 +179,9 @@ dacVScontrol_annotation <- merge(ensembl_genes, dacVScontrol_cutoff_significant,
 #count the occurances of each ensembl id
 dacVScontrol_annotation_occuranges <- as.data.frame(table(dacVScontrol_annotation$ensembl_id))
 dacVScontrol_annotation_occuranges <- dacVScontrol_annotation_occuranges[order(dacVScontrol_annotation_occuranges$Freq, decreasing=T),]
-dacVScontrol_annotation_occuranges
+
+#see the top 6 genes
+head(dacVScontrol_annotation_occuranges)
 ```
 
 Looks like the top three most affected genes are: `r head(as.character(dacVScontrol_annotation_occuranges$Var1), 3)`.

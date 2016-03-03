@@ -4,6 +4,14 @@ March 2, 2016
 
 Competition information: http://makedatasense.ca/data-science-competition/#econdata
 
+We asked:
+
+* What faculty are you in? 
+* How much experience do you have with Economics/International Policy? 
+* How much experience do you have with Data Science?
+* Are you looking for a team?
+* What year are you in
+
 
 
 
@@ -16,13 +24,13 @@ Competition information: http://makedatasense.ca/data-science-competition/#econd
 
 ![](participant_data_files/figure-html/unnamed-chunk-4-1.png)
 
-## What skill level are people who are looking for teams
+## What skill level are people who are looking for teams?
 
-![](participant_data_files/figure-html/unnamed-chunk-5-1.png)
 
-## What skill level is people not looking for teams
 
-![](participant_data_files/figure-html/unnamed-chunk-6-1.png)
+## What skill level are people not looking for teams?
+
+
 
 ## What faculty are people coming from?
 

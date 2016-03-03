@@ -9,6 +9,14 @@ output:
 
 Competition information: http://makedatasense.ca/data-science-competition/#econdata
 
+We asked:
+
+* What faculty are you in? 
+* How much experience do you have with Economics/International Policy? 
+* How much experience do you have with Data Science?
+* Are you looking for a team?
+* What year are you in
+
 ```{r, include=FALSE}
 require(dplyr)
 require(ggplot2)
@@ -56,9 +64,9 @@ dat %>%
   scale_fill_gradient(low = "white", high = "red4")
 ```
 
-## What skill level are people who are looking for teams
+## What skill level are people who are looking for teams?
 
-```{r}
+```{r, include=FALSE}
 dat %>%
   filter(team) %>%
   group_by(dat_science, economics) %>%
@@ -69,9 +77,9 @@ dat %>%
   scale_fill_gradient(low = "white", high = "red4")
 ```
 
-## What skill level is people not looking for teams
+## What skill level are people not looking for teams?
 
-```{r}
+```{r, include=FALSE}
 dat %>%
   filter(!team) %>%
   group_by(dat_science, economics) %>%

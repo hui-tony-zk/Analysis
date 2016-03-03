@@ -1,28 +1,22 @@
-# Participantdat
+# Participant data for Big Data Big Impact
 Tony Hui  
 March 2, 2016  
 
+Competition information: http://makedatasense.ca/data-science-competition/#econdata
 
 
 
 
-## Do people need teams?
 
+## How many people need teams?
 
-```
-## Source: local data frame [2 x 2]
-## 
-##    team     n
-##   (lgl) (int)
-## 1 FALSE    47
-## 2  TRUE    69
-```
+![](participant_data_files/figure-html/unnamed-chunk-3-1.png)
 
 ## What skill level is everybody?
 
 ![](participant_data_files/figure-html/unnamed-chunk-4-1.png)
 
-## What skill level is people looking for teams
+## What skill level are people who are looking for teams
 
 ![](participant_data_files/figure-html/unnamed-chunk-5-1.png)
 

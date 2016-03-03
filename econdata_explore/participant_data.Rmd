@@ -32,30 +32,40 @@ dat <- dat %>%
          economics = factor(economics, levels = skill_order))
 ```
 
-## Do people need teams?
+## How many people need teams?
 
 ```{r}
 dat %>%
-  group_by(team) %>%
-  tally
+  group_by(team, faculty) %>%
+  tally() %>%
+  filter(team) %>%
+  ggplot(aes(faculty, n)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(y = n+3, label = n))
 ```
 
 ## What skill level is everybody?
 
 ```{r}
 dat %>%
-  ggplot(aes(dat_science, economics)) +
+  group_by(dat_science, economics) %>%
+  tally() %>%
+  ggplot(aes(dat_science, economics, fill = n)) +
   geom_bin2d()+
+  geom_text(aes(label = n)) +
   scale_fill_gradient(low = "white", high = "red4")
 ```
 
-## What skill level is people looking for teams
+## What skill level are people who are looking for teams
 
 ```{r}
 dat %>%
   filter(team) %>%
-  ggplot(aes(dat_science, economics)) +
-  geom_bin2d() +
+  group_by(dat_science, economics) %>%
+  tally() %>%
+  ggplot(aes(dat_science, economics, fill = n)) +
+  geom_bin2d()+
+  geom_text(aes(label = n)) +
   scale_fill_gradient(low = "white", high = "red4")
 ```
 
@@ -64,8 +74,11 @@ dat %>%
 ```{r}
 dat %>%
   filter(!team) %>%
-  ggplot(aes(dat_science, economics)) +
-  geom_bin2d() +
+  group_by(dat_science, economics) %>%
+  tally() %>%
+  ggplot(aes(dat_science, economics, fill = n)) +
+  geom_bin2d()+
+  geom_text(aes(label = n)) +
   scale_fill_gradient(low = "white", high = "red4")
 ```
 

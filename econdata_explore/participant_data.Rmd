@@ -1,0 +1,115 @@
+---
+title: "Participant data for Big Data Big Impact"
+author: "Tony Hui"
+date: "March 2, 2016"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+Competition information: http://makedatasense.ca/data-science-competition/#econdata
+
+```{r, include=FALSE}
+require(dplyr)
+require(ggplot2)
+require(data.table)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+dat <- read.csv("participant_data.csv", stringsAsFactors = F) %>% tbl_df() %>%
+  select(6:10) %>%
+  setnames(c("year", "team", "dat_science", "economics", "faculty")) %>% 
+  filter(dat_science != "") %>%
+  mutate(team = grepl("Yes", team),
+         dat_science = gsub(" \\(.*", "", dat_science),
+         economics = gsub(" \\(.*", "", economics)) 
+
+skill_order <- c("None", "Beginner", "Expert")
+
+dat <- dat %>%
+  mutate(dat_science = factor(dat_science, levels = skill_order),
+         economics = factor(economics, levels = skill_order))
+```
+
+## Do people need teams?
+
+```{r}
+dat %>%
+  group_by(team) %>%
+  tally
+```
+
+## What skill level is everybody?
+
+```{r}
+dat %>%
+  ggplot(aes(dat_science, economics)) +
+  geom_bin2d()+
+  scale_fill_gradient(low = "white", high = "red4")
+```
+
+## What skill level is people looking for teams
+
+```{r}
+dat %>%
+  filter(team) %>%
+  ggplot(aes(dat_science, economics)) +
+  geom_bin2d() +
+  scale_fill_gradient(low = "white", high = "red4")
+```
+
+## What skill level is people not looking for teams
+
+```{r}
+dat %>%
+  filter(!team) %>%
+  ggplot(aes(dat_science, economics)) +
+  geom_bin2d() +
+  scale_fill_gradient(low = "white", high = "red4")
+```
+
+## What faculty are people coming from?
+
+```{r}
+dat %>%
+  ggplot(aes(faculty)) +
+  geom_bar() 
+```
+
+## What year is everybody in?
+
+```{r}
+dat %>%
+  ggplot(aes(year)) +
+  geom_bar() 
+```
+
+## Which faculty has highest percentage of experts?
+
+```{r}
+dat %>%
+  mutate(expert = grepl("Expert", dat_science) | grepl("Expert", economics)) %>%
+  group_by(faculty, expert) %>%
+  tally() %>%
+  mutate(sum = sum(n)) %>%
+  filter(expert) %>%
+  ggplot(aes(faculty, n/sum)) +
+  geom_bar(stat = "identity") +
+  ylab("Percent of experts")
+```
+
+## Experts by year
+
+```{r}
+dat %>%
+  mutate(expert = grepl("Expert", dat_science) | grepl("Expert", economics)) %>%
+  group_by(year, expert) %>%
+  tally() %>%
+  mutate(sum = sum(n)) %>%
+  filter(expert) %>%
+  ggplot(aes(year, n/sum)) +
+  geom_bar(stat = "identity") +
+  ylab("Percent of experts")
+```
+

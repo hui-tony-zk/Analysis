@@ -1,0 +1,209 @@
+---
+title: "Econ Data Exploration"
+author: "Tony Hui"
+date: "February 9, 2016"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r}
+require(data.table)
+require(dplyr)
+require(ggplot2)
+require(tidyr)
+require(knitr)
+require(pheatmap)
+```
+
+## Load data
+
+```{r, cache=TRUE}
+all_data <- fread("WDI_Data.csv", header = T, check.names = TRUE, data.table = FALSE) %>% 
+  setnames(gsub(" ", "", colnames(.)) %>% tolower()) %>% tbl_df()
+
+all_data_long <- all_data %>%
+  select(-countryname, -indicatorname) %>%
+  gather(key = year, value = value, -countrycode, -indicatorcode) %>%
+  filter(!is.na(value))
+
+all_data %>% head %>% kable("markdown")
+
+all_data_long %>% head %>% kable("markdown")
+```
+
+## Grab just LDCs
+
+```{r}
+filter(all_data, grepl("Least", countryname)) %>% select(countryname, countrycode) %>% unique()
+
+ldc <- "LDC"
+```
+
+## Find GDP related indicators
+
+```{r}
+indicator_codes <- data.frame(indicatorcode = all_data_long$indicatorcode %>% unique, stringsAsFactors = F)
+
+all_data_long %>% 
+  filter(grepl("GDP", indicatorcode)) %>%
+  group_by(indicatorcode) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  head(15) %>%
+  kable("markdown")
+
+# Select GDP per capita growth (annual %)
+
+gdp <- "NY.GDP.PCAP.KD.ZG"
+```
+
+## Format data for correlations
+
+```{r}
+ldc_data_long <- all_data_long %>% 
+  filter(countrycode == "LDC")
+
+ldc_data_long %>% head %>% kable("markdown")
+
+# Get earliest and latest timepoint for GDP data, removing the rest
+ldc_data_daterange <- ldc_data_long %>%
+  filter(indicatorcode == gdp) %>%
+  summarize(min = min(year), max = max(year))
+
+ldc_data_daterange
+
+# Get variable names to include 
+good_indicators <- ldc_data_long %>% 
+  group_by(indicatorcode) %>%
+  # Remove variables where latest measurement isn't 2012 or later
+  # Remove variables with less than 10 years of data, or variables with 0 standard deviation
+  filter(n() > 10, sd(value) > 0, max(year) >= 2012) %>%
+  select(indicatorcode) %>%
+  unique()
+
+# Transform into matrix
+ldc_data_matrix <- ldc_data_long %>%
+  # Only grab datapoints where the data lies between the GDP datapoints
+  filter(year >= ldc_data_daterange$min, year <= ldc_data_daterange$max) %>%
+  # Remove indicators that failed the test
+  filter(indicatorcode %in% good_indicators$indicatorcode) %>%
+  spread(key = indicatorcode, value = value) %>%
+  select(-c(1:2))
+
+ldc_data_matrix %>% head %>% kable("markdown")
+
+# correlate
+ldc_cor_matrix <- cor(x = as.matrix(ldc_data_matrix[,gdp]), y = as.matrix(select(ldc_data_matrix, -matches(gdp))), use = "pairwise.complete", method = "spearman")
+
+ldc_cor_df <- t(ldc_cor_matrix) %>% as.data.frame() %>% tbl_df() %>%
+  setnames("LDC") %>%
+  mutate(indicatorcode = colnames(ldc_cor_matrix)) %>%
+  arrange(desc(abs(LDC)))
+
+ldc_cor_df %>% head %>% kable("markdown")
+```
+
+## plot this
+
+```{r}
+ldc_cor_df %>%
+  ggplot(aes(reorder(indicatorcode, LDC), LDC)) +
+  geom_bar(stat = "identity")
+```
+
+```{r}
+ldc_cor_df %>%
+  ggplot(aes(reorder(indicatorcode, LDC), "LDC", fill=LDC)) +
+  geom_bin2d() +
+  scale_fill_gradient2(low = "#2c7bb6", mid = "#ffffbf", high = "#d7191c")
+```
+
+## "Visually" confirm the highest correlations
+
+```{r}
+test <- "NV.SRV.TETC.KD.ZG"
+
+ldc_confirm <- ldc_data_long %>%
+  filter(indicatorcode == gdp | indicatorcode == test) %>%
+  spread(key = indicatorcode, value = value) %>%
+  filter(complete.cases(.)) %>%
+  as.data.frame()
+
+ggplot(ldc_confirm, aes(x = ldc_confirm[,gdp], y = ldc_confirm[,test])) +
+  xlab(gdp) +
+  ylab(test) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+## Scale computation to all countries
+
+```{r scale_to_all, cache=TRUE}
+# Get earliest and latest timepoint for GDP data, removing the rest
+all_data_daterange <- all_data_long %>%
+  group_by(countrycode) %>%
+  filter(indicatorcode == gdp) %>%
+  summarize(min_year = as.numeric(min(year)), max_year = as.numeric(max(year))) %>%
+  mutate(range = max_year - min_year) %>%
+  filter(range >= 10)
+
+# Merge the date range information into data frame 
+date_data_long <- inner_join(all_data_long, all_data_daterange)
+
+# Find indicators where year is within 2 years of most recent GDP reading, and there is non-zero standard deviation, and there is more than 10 observations
+good_indicators <- date_data_long %>% 
+  group_by(countrycode, indicatorcode) %>%
+  filter(max(year) >= max(max_year)-2) %>%
+  filter(n() >= 10, sd(value) > 0) %>%
+  filter(year <= max_year, year >= min_year)
+
+# Find indicators that a lot of countries have data for
+high_freq_indicators <- good_indicators %>%
+  ungroup() %>%
+  select(countrycode, indicatorcode) %>% unique() %>%
+  group_by(indicatorcode) %>%
+  tally() 
+
+qplot(high_freq_indicators$n, geom="density") + 
+  xlab("Number of countries with data about this indicator")
+
+# Find indicators with support in lots of countries
+high_freq_indicators_list <- (high_freq_indicators %>% filter(n > 150))$indicatorcode
+
+great_indicators <- good_indicators %>%
+  filter(indicatorcode %in% high_freq_indicators_list)
+
+high_freq_countries <- great_indicators %>% select(countrycode, indicatorcode) %>% unique() %>% group_by(countrycode) %>% tally() 
+
+qplot(high_freq_countries$n, geom="density") + 
+  xlab("Number of indicators each country has data for")
+
+high_freq_countries_list <- (high_freq_countries %>% filter(n > 300))$countrycode
+
+great_indicators_and_countries <- great_indicators %>%
+  filter(countrycode %in% high_freq_countries_list)
+
+# Transform into matrix
+all_data_spread_matrix <- great_indicators_and_countries %>%
+  spread(key = indicatorcode, value = value) %>%
+  select(-c(2:5))
+
+# correlate
+all_countries_cor_matrix <- all_data_spread_matrix %>%
+  group_by(countrycode) %>%
+  do(cor(x = as.matrix(.[,gdp]), y = as.matrix(select(., -matches(gdp), -countrycode)), use = "pairwise.complete", method = "spearman") %>% as.data.frame())
+
+# Turn into matrix for pheatmap
+rownames(all_countries_cor_matrix) <- all_countries_cor_matrix$countrycode
+all_countries_cor_heatmap <- all_countries_cor_matrix %>% ungroup %>% select(-countrycode) %>% data.matrix()
+```
+
+## Heatmap
+
+```{r}
+pheatmap(all_countries_cor_heatmap, cluster_rows = T, cluster_cols = T, 
+         color = colorRampPalette(c("#2c7bb6", "#ffffbf", "#d7191c"))(21))
+```
+
+
